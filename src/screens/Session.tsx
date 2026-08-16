@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, lastSetsForSlot, DEFAULT_SETTINGS, type SetLog } from '../db'
 import { SESSION_NAMES, SUBSTITUTIONS, TECHNIQUE_LABEL, WEAK_POINTS, slotsForSession, type Slot } from '../data/program'
-import { exerciseName } from '../data/exercises'
+import { exerciseName, exerciseCue } from '../data/exercises'
 import { resolveSlotExercise } from '../lib/resolveSlot'
 import { repsTargetForSet, guessRepsNumber } from '../lib/reps'
 import { defaultRpe } from '../lib/rpe'
@@ -283,6 +283,11 @@ export default function Session() {
           {TECHNIQUE_LABEL[slot.technique] && (
             <p className="muted" style={{ fontSize: 13, marginTop: 2 }}>
               {TECHNIQUE_LABEL[slot.technique]}
+            </p>
+          )}
+          {exerciseCue(exId) && (
+            <p className="cue-line">
+              <span aria-hidden="true">💡</span> {exerciseCue(exId)}
             </p>
           )}
           {slot.note && (

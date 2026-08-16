@@ -3,7 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { db, DEFAULT_SETTINGS } from '../db'
 import { describeNext } from '../lib/cycle'
 import { SESSION_NAMES, slotsForSession } from '../data/program'
-import { exerciseName } from '../data/exercises'
+import { exerciseName, exerciseCue } from '../data/exercises'
 import { resolveSlotExercise } from '../lib/resolveSlot'
 
 export default function Today() {
@@ -62,6 +62,11 @@ export default function Today() {
                   {setsToday} × {slot.repsLabel}
                 </span>
               </div>
+              {exerciseCue(exId) && (
+                <p className="muted" style={{ fontSize: 12, marginTop: 4 }}>
+                  {exerciseCue(exId)}
+                </p>
+              )}
               {slot.inferred && (
                 <p className="muted" style={{ fontSize: 11, marginTop: 4 }}>
                   ≈ estimated for Block 2 — verify against your program

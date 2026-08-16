@@ -499,3 +499,13 @@ input.stepper-value:focus {
 .next-cta {
   margin-top: 12px;
 }
+
+.cue-line {
+  font-size: 13px;
+  color: var(--text);
+  background: var(--bg-sunken);
+  border-radius: var(--radius-s);
+  padding: 8px 10px;
+  margin-top: 8px;
+  line-height: 1.4;
+}
