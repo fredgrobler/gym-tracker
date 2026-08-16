@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, lastSetsForSlot, DEFAULT_SETTINGS, type SetLog } from '../db'
 import { SESSION_NAMES, SUBSTITUTIONS, TECHNIQUE_LABEL, WEAK_POINTS, slotsForSession, type Slot } from '../data/program'
-import { exerciseName, exerciseCue } from '../data/exercises'
+import { exerciseName, exerciseCue, exerciseVideoId } from '../data/exercises'
 import { resolveSlotExercise } from '../lib/resolveSlot'
 import { repsTargetForSet, guessRepsNumber } from '../lib/reps'
 import { defaultRpe } from '../lib/rpe'
@@ -14,6 +14,7 @@ import { advance } from '../lib/cycle'
 import RestTimer from '../components/RestTimer'
 import PlateSheet from '../components/PlateSheet'
 import SubstitutionSheet from '../components/SubstitutionSheet'
+import VideoSheet from '../components/VideoSheet'
 import NumberField from '../components/NumberField'
 
 const DEFAULT_REST_SECONDS = 90
@@ -49,6 +50,7 @@ export default function Session() {
   const [exerciseOverrides, setExerciseOverrides] = useState<Record<string, string>>({})
   const [showPlateSheet, setShowPlateSheet] = useState(false)
   const [showSubSheet, setShowSubSheet] = useState(false)
+  const [showVideoSheet, setShowVideoSheet] = useState(false)
   const [lastTime, setLastTime] = useState<{ log: SetLog[]; sameExercise: boolean } | null>(null)
 
   const [weightKg, setWeightKg] = useState(0)
@@ -290,6 +292,11 @@ export default function Session() {
               <span aria-hidden="true">💡</span> {exerciseCue(exId)}
             </p>
           )}
+          {exerciseVideoId(exId) && (
+            <button className="watch-form-btn" onClick={() => setShowVideoSheet(true)}>
+              ▶ Watch form
+            </button>
+          )}
           {slot.note && (
             <p className="muted" style={{ fontSize: 12, marginTop: 4 }}>
               {slot.note}
@@ -465,6 +472,9 @@ export default function Session() {
           onSelect={(newId) => setExerciseOverrides((o) => ({ ...o, [slot.id]: newId }))}
           onClose={() => setShowSubSheet(false)}
         />
+      )}
+      {showVideoSheet && exerciseVideoId(exId) && (
+        <VideoSheet videoId={exerciseVideoId(exId)!} title={exerciseName(exId)} onClose={() => setShowVideoSheet(false)} />
       )}
     </div>
   )
