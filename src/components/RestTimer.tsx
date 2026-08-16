@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { db } from '../db'
-import { playChime } from '../lib/audio'
+import { playChime, unlockAudio } from '../lib/audio'
 
 const PRESETS = [60, 90, 120, 180]
 
@@ -29,6 +29,10 @@ export default function RestTimer({ sessionId, restEndsAt }: { sessionId: number
   }, [remainingMs, restEndsAt, sessionId])
 
   async function start(seconds: number) {
+    // Starting a timer manually may be the first tap of the session, and iOS Safari
+    // only unlocks AudioContext inside a user gesture — without this the end-of-rest
+    // chime would silently never play.
+    unlockAudio()
     await db.sessions.update(sessionId, { restEndsAt: new Date(Date.now() + seconds * 1000).toISOString() })
   }
 

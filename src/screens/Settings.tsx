@@ -1,13 +1,14 @@
 import { useRef, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, DEFAULT_SETTINGS, type Settings as SettingsRow } from '../db'
-import { WEAK_POINTS } from '../data/program'
+import { WEAK_POINTS, SESSION_NAMES, SESSION_ORDER, type SessionKey } from '../data/program'
 import { exportBackup, importBackup } from '../lib/backup'
 import { requestPersistentStorage, isStoragePersisted } from '../lib/storage'
 import { displayWeight, kgToLb, lbToKg } from '../lib/format'
 
 export default function Settings() {
   const settings = useLiveQuery(() => db.settings.get(1)) ?? DEFAULT_SETTINGS
+  const enrollment = useLiveQuery(() => db.enrollment.get(1))
   const [persisted, setPersisted] = useState<boolean | null>(null)
   const [importing, setImporting] = useState(false)
   const fileInput = useRef<HTMLInputElement>(null)
@@ -130,6 +131,68 @@ export default function Settings() {
               ))}
             </select>
           </label>
+        </div>
+
+        <div className="card stack">
+          <h2 style={{ fontSize: 15 }}>Current position in program</h2>
+          <p className="muted" style={{ fontSize: 12 }}>
+            Correct this if you skipped a session or set the wrong starting point.
+          </p>
+          {enrollment && (
+            <>
+              <div className="spread">
+                <span className="muted" style={{ fontSize: 13 }}>
+                  Block
+                </span>
+                <div className="row">
+                  {([1, 2] as const).map((b) => (
+                    <button
+                      key={b}
+                      className={`btn ${enrollment.block === b ? 'btn-primary' : 'btn-secondary'}`}
+                      style={{ padding: '8px 16px', minHeight: 40 }}
+                      onClick={() => db.enrollment.update(1, { block: b })}
+                    >
+                      {b}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="spread">
+                <span className="muted" style={{ fontSize: 13 }}>
+                  Week in block (5 = deload)
+                </span>
+                <input
+                  type="number"
+                  min={1}
+                  max={5}
+                  inputMode="numeric"
+                  value={enrollment.rotation}
+                  onChange={(e) =>
+                    db.enrollment.update(1, { rotation: Math.min(5, Math.max(1, Number(e.target.value) || 1)) })
+                  }
+                  style={{ width: 60, padding: 8, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-sunken)' }}
+                />
+              </div>
+              <label className="stack" style={{ gap: 4 }}>
+                <span className="muted" style={{ fontSize: 13 }}>
+                  Next session
+                </span>
+                <select
+                  value={SESSION_ORDER[enrollment.sessionIndex]}
+                  onChange={(e) =>
+                    db.enrollment.update(1, { sessionIndex: SESSION_ORDER.indexOf(e.target.value as SessionKey) })
+                  }
+                  style={{ padding: 10, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-sunken)' }}
+                >
+                  {SESSION_ORDER.map((key) => (
+                    <option key={key} value={key}>
+                      {SESSION_NAMES[key]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </>
+          )}
         </div>
 
         <div className="card stack">

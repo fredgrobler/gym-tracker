@@ -83,16 +83,19 @@ export const DEFAULT_SETTINGS: Settings = {
   storagePersisted: false,
 }
 
-/** Most recent set log for a given slot, preferring an exact exercise match
- *  (handles the case where the slot's exercise was substituted last time). */
+/** Working sets logged for this slot in the most recent *previous* session.
+ *  `excludeSessionId` keeps the in-progress session out of the result — otherwise
+ *  "last time" would start reflecting the sets you just logged today. */
 export async function lastSetsForSlot(
   slotId: string,
   exerciseId: string,
+  excludeSessionId?: number,
 ): Promise<{ log: SetLog[]; sameExercise: boolean } | null> {
   const bySlot = await db.setLogs.where('slotId').equals(slotId).sortBy('createdAt')
-  if (bySlot.length === 0) return null
-  const lastSessionId = bySlot[bySlot.length - 1].sessionId
-  const lastSessionLogs = bySlot.filter((l) => l.sessionId === lastSessionId)
+  const prior = bySlot.filter((l) => l.sessionId !== excludeSessionId && !l.isWarmup)
+  if (prior.length === 0) return null
+  const lastSessionId = prior[prior.length - 1].sessionId
+  const lastSessionLogs = prior.filter((l) => l.sessionId === lastSessionId)
   const sameExercise = lastSessionLogs.every((l) => l.exerciseId === exerciseId)
   return { log: lastSessionLogs.sort((a, b) => a.setIndex - b.setIndex), sameExercise }
 }

@@ -83,6 +83,14 @@ p {
 button {
   font: inherit;
   color: inherit;
+  /* Reset the UA border/background so utility classes like .btn-ghost don't
+     inherit a default outline box. Classes below re-add what they need. */
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 input,
@@ -337,7 +345,46 @@ textarea {
   font-size: 20px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  min-width: 56px;
+  min-width: 0;
+}
+
+/* The value slot is an <input> for weight/reps and a <span> for RPE; strip the
+   UA chrome so both read as part of the stepper rather than a nested field. */
+input.stepper-value {
+  appearance: none;
+  -webkit-appearance: none;
+  border: none;
+  background: transparent;
+  padding: 0;
+  width: 100%;
+  border-radius: 0;
+}
+
+input.stepper-value:focus {
+  outline: none;
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+/* Keeps the weight / reps / RPE rows optically aligned: fixed label, flexible
+   stepper, fixed trailing slot that stays reserved even when empty. */
+.entry-row {
+  display: grid;
+  grid-template-columns: 56px 1fr 40px;
+  align-items: center;
+  gap: 8px;
+}
+
+.entry-row > .entry-label {
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.entry-row > .entry-trailing {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 18px;
+  min-height: 40px;
 }
 
 .set-row {
@@ -358,4 +405,97 @@ textarea {
   font-weight: 700;
   color: var(--text-dim);
   font-size: 13px;
+}
+
+.progress-strip {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 10px 0 2px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.progress-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.chip {
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  font-size: 13px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--text-dim);
+}
+
+.chip-partial {
+  border-color: var(--warning);
+  color: var(--warning);
+}
+
+.chip-done {
+  background: var(--success);
+  border-color: var(--success);
+  color: #fff;
+}
+
+.chip-current {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  color: var(--text);
+}
+
+.chip-done.chip-current {
+  color: #fff;
+}
+
+.exercise-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 19px;
+  font-weight: 700;
+  text-align: left;
+  width: 100%;
+  min-height: 32px;
+}
+
+.swap-hint {
+  color: var(--text-dim);
+  font-size: 15px;
+}
+
+.last-time {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.last-time-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.last-time-sets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.next-cta {
+  margin-top: 12px;
 }

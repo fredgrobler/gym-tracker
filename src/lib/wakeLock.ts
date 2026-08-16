@@ -3,6 +3,27 @@
 // for keeping the screen awake without the native API.
 let sentinel: WakeLockSentinel | null = null
 let fallbackVideo: HTMLVideoElement | null = null
+let rafId: number | null = null
+
+function startCanvasStream(): MediaStream {
+  const canvas = document.createElement('canvas')
+  canvas.width = 2
+  canvas.height = 2
+  const ctx = canvas.getContext('2d')
+  // The canvas must keep producing frames for the stream to stay live, but a full
+  // rAF loop is wasteful — throttle to ~2fps, which is plenty to hold the stream open.
+  let last = 0
+  const draw = (t: number) => {
+    if (ctx && t - last > 500) {
+      last = t
+      ctx.fillStyle = ctx.fillStyle === '#000000' ? '#010101' : '#000000'
+      ctx.fillRect(0, 0, 2, 2)
+    }
+    rafId = requestAnimationFrame(draw)
+  }
+  rafId = requestAnimationFrame(draw)
+  return (canvas as HTMLCanvasElement & { captureStream: (fps?: number) => MediaStream }).captureStream(2)
+}
 
 function ensureFallbackVideo(): HTMLVideoElement {
   if (fallbackVideo) return fallbackVideo
@@ -15,41 +36,48 @@ function ensureFallbackVideo(): HTMLVideoElement {
   v.style.height = '1px'
   v.style.opacity = '0'
   v.style.pointerEvents = 'none'
-  // Generate a real (not fabricated) silent video stream at runtime via canvas.captureStream,
-  // rather than embedding a hand-written binary blob that may not decode correctly.
-  const canvas = document.createElement('canvas')
-  canvas.width = 2
-  canvas.height = 2
-  const ctx = canvas.getContext('2d')
-  const draw = () => {
-    if (ctx) {
-      ctx.fillStyle = '#000'
-      ctx.fillRect(0, 0, 2, 2)
-    }
-    requestAnimationFrame(draw)
-  }
-  draw()
-  const stream = (canvas as HTMLCanvasElement & { captureStream: (fps?: number) => MediaStream }).captureStream(1)
-  v.srcObject = stream
+  v.srcObject = startCanvasStream()
   document.body.appendChild(v)
   fallbackVideo = v
   return v
 }
 
+function teardownFallback(): void {
+  if (rafId !== null) {
+    cancelAnimationFrame(rafId)
+    rafId = null
+  }
+  if (fallbackVideo) {
+    fallbackVideo.pause()
+    const stream = fallbackVideo.srcObject as MediaStream | null
+    stream?.getTracks().forEach((t) => t.stop())
+    fallbackVideo.srcObject = null
+    fallbackVideo.remove()
+    fallbackVideo = null
+  }
+}
+
 export async function acquireWakeLock(): Promise<void> {
+  if (sentinel || fallbackVideo) return // already held
   if ('wakeLock' in navigator) {
     try {
-      sentinel = await (navigator as unknown as { wakeLock: { request: (t: 'screen') => Promise<WakeLockSentinel> } }).wakeLock.request('screen')
+      sentinel = await (
+        navigator as unknown as { wakeLock: { request: (t: 'screen') => Promise<WakeLockSentinel> } }
+      ).wakeLock.request('screen')
+      // The OS drops the lock when the page is hidden; clear our handle so a later
+      // reacquire isn't skipped by the guard above.
+      sentinel.addEventListener?.('release', () => {
+        sentinel = null
+      })
       return
     } catch {
       // fall through to video fallback
     }
   }
   try {
-    const v = ensureFallbackVideo()
-    await v.play()
+    await ensureFallbackVideo().play()
   } catch {
-    // best effort only
+    teardownFallback() // don't leave a dead element + rAF loop running
   }
 }
 
@@ -62,9 +90,7 @@ export async function releaseWakeLock(): Promise<void> {
     }
     sentinel = null
   }
-  if (fallbackVideo) {
-    fallbackVideo.pause()
-  }
+  teardownFallback()
 }
 
 export function reacquireOnVisible(): () => void {
